@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <script src="js/jquery.min.js"></script>
+    <script src="js/easeljs.min.js"></script>
+    <script src="js/eventemitter2.min.js"></script>
+    <script src="js/roslib.min.js"></script>
+    <script src="js/ros2d.js"></script>
+    <script src="js/nav2d.js"></script>
+    <script src="js/jquery.countdown360.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-dark">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                      <span class="navbar-toggler-icon"></span>
+                    </button>
+        <div class="collapse navbar-collapse d-flex justify-content-center text-center" id="navbarNavAltMarkup">
+            <h3 class="text-light">RoBOSS - Your Airprot Assistant</h3>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row">
+            <div class="col-12 mt-3 mb-3">
+                <div id="map">
+                    <div class="zoomButton">
+                        <div id="countdown"></div>
+                        <button id="zoomplus">+</button>
+                        <button id="zoomminus">-</i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4">
+                    <div class="card text-left">
+                        <div class="card-body">
+                            <h4 class="card-title">Check-In Points</h4>
+                            <p class="card-text">Select your check points</p>
+                            <select id="getCheckInGoal" class="form-select" aria-label="Default select example">
+                                <option value="-1" >Select your check points</option>
+                                <option value="0" >Turkish Airlines</option>
+                                <option value="1">PEGASUS</option>
+                                <option value="2">ONUR AIR</option>
+                                <option value="3"></option>
+                            </select>
+
+                            <button id="checkInButton" class="btn btn-primary mt-2" id="sendGoal" type="button">Come With Me</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card text-left">
+                        <div class="card-body">
+                            <h4 class="card-title">Gates</h4>
+                            <p class="card-text">Select your check points</p>
+                            <select id="getGateGoal" class="form-select" aria-label="Default select example">
+                                <option value="" >Select gates</option>
+                                <option value="0" >A-180</option>
+                                <option value="1">B-140</option>
+                                <option value="2">C-200</option>
+                                <option value="3"></option>
+                            </select>
+
+                            <button id="gatesButton" class="btn btn-primary mt-2" type="button">Come With Me</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card text-left">
+                        <div class="card-body">
+                            <h4 class="card-title">Cafes</h4>
+                            <p class="card-text">Select your cafe</p>
+                            <select id="getCafeGoal" class="form-select" aria-label="Default select example">
+                                <option value="" >Select cafe</option>
+                                <option value="0" >Starbucks</option>
+                                <option value="1">Burger-King</option>
+                                <option value="2">Cafe</option>
+                                <option value="3"></option>
+                            </select>
+
+                            <button id="cafesButton" class="btn btn-primary mt-2" type="button">Come With Me</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<script type="text/javascript" type="text/javascript">
+    // Connecting to ROS
+    // -----------------
+
+    var ros = new ROSLIB.Ros({
+        url: 'ws://0.0.0.0:9090'
+    });
+
+    connectionToROS(ros);
+
+    // Create the main viewer.
+    var viewer = new ROS2D.Viewer({
+        divID: 'map',
+        width: MAP_WIDTH,
+        height: 550
+    });
+    var stage = viewer.scene;
+
+    // Setup the nav client.
+    var gridClient = new NAV2D.OccupancyGridClientNav({
+        ros: ros,
+        rootObject: stage,
+        viewer: viewer,
+        serverName: '/move_base',
+        continuous: true
+    });
+
+
+    // Monitoring /move_base/result
+    var move_baseListener = new ROSLIB.Topic({
+        ros: ros,
+        name: '/move_base/result',
+        messageType: 'move_base_msgs/MoveBaseActionResult'
+    });
+
+
+    var countdown = $("#map").countdown360({
+        radius: 20,
+        seconds: 3,
+        fontColor: '#FFFFFF',
+        autostart: false,
+        onComplete: function() {
+            console.log('done')
+        }
+    });
+
+    var pan = new ROS2D.PanView({
+        ros: ros,
+        rootObject: viewer.scene
+    });
+
+    function pane(a, b) {
+        pan.startPan(a, b);
+    }
+
+    function panned(c, d) {
+        pan.pan(c, d);
+    }
+
+    //Connection to ROS
+    function connectionToROS(ros) {
+        ros.on('connection', function() {
+            console.log('Connected to websocket server.');
+            var rosTopic = new ROSLIB.Topic({
+                ros: ros,
+                name: '/rosout',
+                messageType: 'rosgraph_msgs/Log'
+            });
+        });
+
+
+        ros.on('close', function() {
+            console.log('Connection to websocket server closed.');
+
+        });
+
+
+        ros.on('error', function(error) {
+            console.log('Error connecting to websocket server: ', error);
+            setTimeout(function() {
+                connectionToROS();
+            }, 1000);
+
+        });
+    }
+
+
+    //Send a goal to the navigation stack with the given pose.
+    function getGoal(goalX, goalY) {
+        document.getElementById("cafesButton").disabled = true;
+        document.getElementById("gatesButton").disabled = true;
+        document.getElementById("checkInButton").disabled = true;
+        var marker;
+        var goal;
+        swal({
+                title: "Are you sure about your destination?",
+                text: "",
+                icon: "warning",
+                buttons: ["Change Destination!", "Let's Go!"],
+            })
+            .then((choice) => {
+                if (choice) {
+                    //countdown.start();
+
+                    var actionClient = new ROSLIB.ActionClient({
+                        ros: ros,
+                        serverName: '/move_base',
+                        actionName: 'move_base_msgs/MoveBaseAction'
+                    });
+
+                    var positionVec3 = new ROSLIB.Vector3(null);
+                    positionVec3.x = goalX;
+                    positionVec3.y = goalY;
+
+                    var pose = new ROSLIB.Pose({
+                        position: positionVec3,
+                        orientation: new ROSLIB.Quaternion({
+                            x: 0,
+                            y: 0,
+                            z: 0,
+                            w: 1.0
+                        })
+                    });
+
+                    goal = new ROSLIB.Goal({
+                        actionClient: actionClient,
+                        goalMessage: {
+                            target_pose: {
+                                header: {
+                                    frame_id: 'map'
+                                },
+                                pose: pose
+                            }
+                        }
+                    });
+
+                    marker = createGoalMarker(pose);
+
+                    pathed();
+                    ShowGoalMarker(marker, stage);
+                    goal.send();
+
+                } else {
+                    swal("Destionation!", "Please correct your destination");
+                }
+            });
+
+        move_baseListener.subscribe(function(actionResult) {
+            console.log('Received message on ' + move_baseListener.name + 'status: ' + actionResult.status.status);
+            if (actionResult.status.status == 2) {
+                document.getElementById("cafesButton").disabled = true;
+                document.getElementById("gatesButton").disabled = true;
+                document.getElementById("checkInButton").disabled = true;
+
+                goal.cancel();
+                swal("Warning!", "goal cancelled");
+
+            } else if (actionResult.status.status == 3) {
+                document.getElementById("cafesButton").disabled = false;
+                document.getElementById("gatesButton").disabled = false;
+                document.getElementById("checkInButton").disabled = false;
+
+                RemoveGoalMarker(marker, stage);
+                upathed();
+                swal({
+                    title: "Have a Good Day!",
+                    text: "You have come to the desired place! Please take your load!",
+                    icon: "success",
+                });
+
+            }
+        });
+    }
+
+
+    // create marker to given goal pose
+    function createGoalMarker(pose) {
+        var goalMarker = new ROS2D.NavigationImage({
+            size: 0.5,
+            pulse: true,
+            image_url: 'img/targetPoint2.png'
+        });
+
+        var point = new ROS2D.PolygonMarker({
+            pointSize: 0.2,
+            pointColor: createjs.Graphics.getRGB(255, 0, 0, 0.50)
+        });
+
+        goalMarker.x = pose.position.x;
+        goalMarker.y = -pose.position.y;
+
+
+        //var point = point.createPointShape(pose.position);
+        //stage.addChild(point);
+
+        return goalMarker;
+    }
+
+    function RemoveGoalMarker(marker, stage) {
+        stage.removeChild(marker);
+    }
+
+    function ShowGoalMarker(marker, stage) {
+        stage.addChild(marker);
+    }
+
+    function zoomInMap(ros, viewer) {
+        var zoom = new ROS2D.ZoomView({
+            ros: ros,
+            rootObject: stage
+        });
+        zoom.startZoom(250, 250);
+        zoom.zoom(1.2);
+    }
+
+    function zoomOutMap(ros, viewer) {
+        var zoom = new ROS2D.ZoomView({
+            ros: ros,
+            rootObject: stage
+        });
+        zoom.startZoom(250, 250);
+        zoom.zoom(0.8);
+    }
+
+    $("#checkInButton").click(function(event) {
+        var goalPose = [
+            [5.7, -1],
+            [2.7, 4.4],
+            [-5, 3.2]
+        ];
+
+        var e = document.getElementById("getCheckInGoal");
+        var goalIndex = parseInt(e.value);
+        var goalY;
+        var goalX;
+
+        if (goalIndex == -1) {
+            alert("Please check your destination")
+        } else {
+            goalX = parseFloat(goalPose[goalIndex][0]);
+            goalY = parseFloat(goalPose[goalIndex][1]);
+
+            getGoal(goalX, goalY);
+        }
+
+    });
+
+
+    $("#gatesButton").click(function(event) {
+        var goalPose = [
+            [5.7, -1],
+            [2.7, 4.4],
+            [-5, 3.2]
+        ];
+
+        var e = document.getElementById("getGateGoal");
+        var goalIndex = parseInt(e.value);
+        var goalY;
+        var goalX;
+
+        if (goalIndex == -1) {
+            alert("Please check your destination")
+        } else {
+            goalX = parseFloat(goalPose[goalIndex][0]);
+            goalY = parseFloat(goalPose[goalIndex][1]);
+
+            getGoal(goalX, goalY);
+        }
+
+    });
+
+
+    $("#cafesButton").click(function(event) {
+        var goalPose = [
+            [5.7, -1],
+            [2.7, 4.4],
+            [-5, 3.2]
+        ];
+
+        var e = document.getElementById("getCafeGoal");
+        var goalIndex = parseInt(e.value);
+        var goalY;
+        var goalX;
+
+        if (goalIndex == -1) {
+            alert("Please check your destination")
+        } else {
+            goalX = parseFloat(goalPose[goalIndex][0]);
+            goalY = parseFloat(goalPose[goalIndex][1]);
+
+            getGoal(goalX, goalY);
+        }
+    });
+
+    $("#zoomplus").click(function(event) {
+        event.preventDefault();
+        zoomInMap(ros, viewer);
+
+    });
+
+    $("#zoomminus").click(function(event) {
+        event.preventDefault();
+        zoomOutMap(ros, viewer);
+
+    });
+
+    function clickGoal(event) {
+
+        // if mouse button is held down:
+        // - get current mouse position
+        // - calulate direction between stored <position> and current position
+
+        // get position when mouse button is pressed down
+        var position = stage.globalToRos(event.stageX, event.stageY);
+        var positionVec3 = new ROSLIB.Vector3(position);
+        var currentPos = stage.globalToRos(event.stageX, event.stageY);
+        var currentPosVec3 = new ROSLIB.Vector3(currentPos);
+
+
+        var xDelta = currentPosVec3.x - positionVec3.x;
+        var yDelta = currentPosVec3.y - positionVec3.y;
+
+        var thetaRadians = Math.atan2(xDelta, yDelta);
+
+        var thetaDegrees = thetaRadians * (180.0 / Math.PI);
+
+        if (thetaDegrees >= 0 && thetaDegrees <= 180) {
+            thetaDegrees += 270;
+        } else {
+            thetaDegrees -= 90;
+        }
+
+        var goalPos = stage.globalToRos(event.stageX, event.stageY);
+        var goalPosVec3 = new ROSLIB.Vector3(goalPos);
+
+        xDelta = goalPosVec3.x - positionVec3.x;
+        yDelta = goalPosVec3.y - positionVec3.y;
+
+        thetaRadians = Math.atan2(xDelta, yDelta);
+
+        if (thetaRadians >= 0 && thetaRadians <= Math.PI) {
+            thetaRadians += (3 * Math.PI / 2);
+        } else {
+            thetaRadians -= (Math.PI / 2);
+        }
+
+        var qz = Math.sin(-thetaRadians / 2.0);
+        var qw = Math.cos(-thetaRadians / 2.0);
+
+        var orientation = new ROSLIB.Quaternion({
+            x: 0,
+            y: 0,
+            z: qz,
+            w: qw
+        });
+
+        var pose = new ROSLIB.Pose({
+            position: positionVec3,
+            orientation: orientation
+        });
+
+        getGoal(pose.position.x, pose.position.y);
+    }
+
+    var mouseDown = false;
+    var panflag = true;
+
+    function main(event, mouseState) {
+
+        if (mouseState === 'down') {
+
+            mouseDown = true;
+        } else if (mouseState === 'move') {
+
+            if (mouseDown === true) {
+
+            }
+        } else if (mouseDown) { // mouseState === 'up'
+            mouseDown = false;
+            clickGoal(event);
+        }
+
+        if (mouseState === 'down') {
+
+            pane(event.stageX, event.stageY);
+
+            panflag = true;
+        } else if (mouseState === 'up') {
+            // console.log("hi up here");
+            panflag = false;
+
+        } else if (mouseState === 'move') {
+            mouseDown = false;
+
+            if (panflag) {
+                panned(event.stageX, event.stageY);
+            }
+        }
+    };
+
+    stage.addEventListener('stagemousedown', function(event) {
+        main(event, 'down');
+        stage.addEventListener('stagemousemove', function(event) {
+            main(event, 'move');
+
+        });
+
+    });
+
+    stage.addEventListener('stagemouseup', function(event) {
+        main(event, 'up');
+    });
+</script>
