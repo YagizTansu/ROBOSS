@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="roboss">
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_base.xacro"/>
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_inertia.xacro"/>
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_wheel.xacro"/>
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_differential.xacro"/>
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_laser.xacro"/>    
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_pole.xacro"/>
+    <xacro:include filename="$(find roboss_robot_description)/urdf/roboss_robot_upper.xacro"/>
+    
+    <xacro:roboss_robot_pole xyz_pose="0.1 0.1 0.05" yon="left_1"/>
+    <xacro:roboss_robot_pole xyz_pose="-0.1 -0.1 0.05" yon="right_1"/>
+    <xacro:roboss_robot_pole xyz_pose="-0.1 0.1 0.05" yon="left_2"/>
+    <xacro:roboss_robot_pole xyz_pose="0.1 -0.1 0.05" yon="right_2"/>
+    <xacro:roboss_robot_base/>
+    <xacro:roboss_robot_upper/>
+    <xacro:roboss_robot_differential/>
+    <xacro:roboss_robot_laser/>
+    <xacro:roboss_robot_wheel xyz_konum="0.0 -0.175 -0.02" rpy_konum="0 0 0" yon="right"/>
+    <xacro:roboss_robot_wheel xyz_konum="0.0 0.175 -0.02" rpy_konum="0 0 0" yon="left"/>
+    <xacro:roboss_robot_caster_wheel xyz_konum="0.15 0.0 -0.03" rpy_konum="0 0 0" yon="front"/>
+    <xacro:roboss_robot_caster_wheel xyz_konum="-0.15 0.0 -0.03" rpy_konum="0 0 0" yon="back"/>
+</robot>

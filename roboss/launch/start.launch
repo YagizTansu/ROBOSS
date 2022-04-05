@@ -1,0 +1,10 @@
+<launch>
+  <include file="/home/yagiz/catkin_ws/src/roboss_robot_gazebo/launch/roboss_robot_gazebo.launch" />
+  <include file="/home/yagiz/catkin_ws/src/roboss_navigation/launch/roboss_navigation.launch" />
+  <include file="/home/yagiz/catkin_ws/src/rosbridge_suite-ros1/rosbridge_server/launch/rosbridge_websocket.launch" />
+
+  <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+    
+  </node>
+
+</launch>

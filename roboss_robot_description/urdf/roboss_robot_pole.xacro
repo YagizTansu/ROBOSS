@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="roboss_robot_pole" params="xyz_pose yon">
+     <link name="base_${yon}_pole">
+       <collision>
+         <origin xyz="0 0 0" rpy="0 0 0"/>
+         <geometry>
+            <cylinder length="0.1" radius="0.005"/>
+         </geometry>
+       </collision>
+       <visual>
+         <origin xyz="0 0 0" rpy="0 0 0"/>
+         <geometry>
+            <cylinder length="0.15" radius="0.005"/>
+         </geometry>
+       </visual>
+       <xacro:cylinder_inertial radius="0.005" length="0.1" mass="0.001"/>
+     </link>
+
+     <joint name="base_${yon}_pole" type="fixed">
+      <origin xyz="${xyz_pose}" rpy="0 0 0"/>
+      <parent link="base_footprint"/>
+      <child link="base_${yon}_pole"/>
+    </joint>
+   <gazebo reference="base_${yon}_pole">
+    <material value="Gazebo/White"/>
+   </gazebo>
+  </xacro:macro>
+</robot>

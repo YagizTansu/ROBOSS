@@ -1,0 +1,6 @@
+<launch>
+  <arg name="multi_robot_name" default=""/>
+
+  <include file="$(find turtlebot3_bringup)/launch/includes/roboss_description.launch.xml">
+  </include>
+</launch>

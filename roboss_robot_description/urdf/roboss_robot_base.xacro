@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="roboss_robot_base">
+     <link name="base_footprint">
+       <collision>
+         <origin xyz="0 0 0" rpy="0 0 0"/>
+         <geometry>
+            <cylinder length="0.03" radius="0.2"/>
+         </geometry>
+       </collision>
+       <visual>
+         <origin xyz="0 0 0" rpy="0 0 0"/>
+         <geometry>
+            <cylinder length="0.03" radius="0.2"/>
+         </geometry>
+       </visual>
+       <xacro:cylinder_inertial radius="0.2" length="0.03" mass="10.0"/>
+     </link>
+     
+     <gazebo reference="base_footprint">
+       <material value="Gazebo/Blue"/>
+     </gazebo>
+  </xacro:macro>
+</robot>
